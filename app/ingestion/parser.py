@@ -1,4 +1,9 @@
-"""Product catalog parsing: CSV ingestion, spec flattening, and document enrichment."""
+"""Product catalog parsing: CSV ingestion, spec flattening, and document enrichment.
+
+This module handles the Extract and Transform (ET) phases of the data pipeline.
+It reads dirty CSV data, safely parses stringified JSON, removes noisy attributes,
+and constructs semantically rich prose documents optimized for vector embeddings.
+"""
 
 import csv
 import json
@@ -7,6 +12,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Domain Specific Filters
 # Generic tags that don't help with search filtering
 _GENERIC_CATEGORIES = {
     "b2c", "appliances", "collections", "home_appliances", "gift_guide",
@@ -36,7 +42,11 @@ _SKIP_SPEC_NAMES = {
 
 
 def parse_csv(filepath: str) -> list[dict]:
-    """Parse the headerless product CSV into structured dicts."""
+    """Parse the headerless product CSV into structured dicts.
+
+    Uses defensive programming to gracefully skip malformed rows rather
+    than crashing the entire ingestion process.
+    """
     products = []
 
     with open(filepath, "r", encoding="utf-8") as f:

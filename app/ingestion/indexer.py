@@ -1,4 +1,8 @@
-"""Embedding generation, ChromaDB vector store, and BM25 keyword index."""
+"""Embedding generation, ChromaDB vector store, and BM25 keyword index.
+This module is the core of the search engine's data layer. It handles translating
+text into mathematical representations (embeddings) and storing them efficiently
+for sub-second retrieval.
+"""
 
 import json
 import logging
@@ -20,7 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 def tokenize(text: str) -> list[str]:
-    """Tokenize text for BM25: lowercase, strip punctuation/symbols, split."""
+    """Tokenize text for BM25: lowercase, strip punctuation/symbols, split.
+    This ensures that searching for 'wi-fi' matches 'WiFi' or 'wi fi'.
+    """
     text = text.lower()
     text = re.sub(r"[™®©°ᶲ""''\"',.:;!?(){}\[\]/\\|—–-]", " ", text)
     return [t for t in text.split() if len(t) > 1]
@@ -30,13 +36,19 @@ def tokenize(text: str) -> list[str]:
 
 
 class EmbeddingProvider(Protocol):
+    """
+    Structural interface (PEP 544) for embedding models.
+    By programming against an interface rather than a concrete class, we can
+    swap between local models, OpenAI, or fallbacks without breaking the indexer.
+    """
     def embed_documents(self, documents: list[str]) -> list[list[float]]: ...
     def embed_query(self, query: str) -> list[float]: ...
 
 
 class SentenceTransformerProvider:
-    """Production embeddings using sentence-transformers (runs locally)."""
-
+    """Production embeddings using sentence-transformers (runs locally).
+    Creates highly accurate dense vectors capturing semantic meaning.
+    """
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         from sentence_transformers import SentenceTransformer
 
@@ -51,8 +63,10 @@ class SentenceTransformerProvider:
 
 
 class TfidfEmbeddingProvider:
-    """Fallback embeddings using TF-IDF + SVD. No downloads needed."""
-
+    """Fallback embeddings using TF-IDF + SVD.
+    If the environment cannot install massive PyTorch binaries for sentence-transformers,
+    this provides a lightweight statistical fallback so the app still runs.
+    """
     def __init__(self, n_components: int = 256):
         from sklearn.decomposition import TruncatedSVD
         from sklearn.feature_extraction.text import TfidfVectorizer
@@ -116,8 +130,9 @@ def create_embedding_provider() -> EmbeddingProvider:
 
 
 class ProductIndex:
-    """Manages vector and keyword indexes for product search."""
-
+    """Manages both vector (ChromaDB) and keyword (BM25) indexes.
+    Acts as a single source of truth for retrieving product data during search.
+    """
     def __init__(self):
         self._settings = get_settings()
         self._embedding_provider: Optional[EmbeddingProvider] = None
