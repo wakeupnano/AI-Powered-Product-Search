@@ -2,7 +2,6 @@
 
 An AI-powered search system that lets users find LG products using natural language queries with a sample product catalog CSV. The system understands intent, extracts filters, and explains why each result matches. 
 
-```
 ## Features
 
 - **Semantic Retrieval:** Uses high-dimensional text embeddings to understand the contextual meaning of queries.
